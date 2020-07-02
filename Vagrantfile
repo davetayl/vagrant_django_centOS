@@ -7,6 +7,7 @@ Vagrant.configure("2") do |config|
 	end
 	djangoapp.vm.network "forwarded_port", guest: 80, host: 80
 	djangoapp.vm.network "forwarded_port", guest: 443, host: 443
-	djangoapp.vm.provision "shell", path: "./provision-djangoapp.sh"
+	djangoapp.vm.provision "shell", path: "./setup-centos.sh"
+#	djangoapp.vm.provision "shell", path: "./provision-djangoapp.sh"
   end
 end
