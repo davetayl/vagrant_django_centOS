@@ -28,13 +28,15 @@ EOF
 
 # Sync clock
 echo "- Sync Clock -"
-echo >> chrony.conf <<<EOF
+cat >> /etc/chrony.conf <<EOF
 server 0.au.pool.ntp.org
 EOF
+
 systemctl enable --now chronyd.service
 
 # Base OS update
 echo "- Update OS -"
 rpm --import /etc/pki/rpm-gpg/RPM-GPG-KEY-centosofficial
-dnf -yqe 3 update > /dev/null
+dnf -yqe 3 update
 
+echo "---- CentOS setup complete ----"; echo ""
