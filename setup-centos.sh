@@ -28,7 +28,10 @@ EOF
 
 # Sync clock
 echo "- Sync Clock -"
-ntpdate 0.au.pool.ntp.org
+echo >> chrony.conf <<<EOF
+server 0.au.pool.ntp.org
+EOF
+systemctl enable --now chronyd.service
 
 # Base OS update
 echo "- Update OS -"

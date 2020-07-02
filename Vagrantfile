@@ -1,6 +1,6 @@
 Vagrant.configure("2") do |config|
   config.vm.define "djangoapp" do |djangoapp|
-    config.vm.box = "centos/8"
+    config.vm.box = "bento/centos-8.1"
 	config.vm.provider "virtualbox" do |vb|
 		vb.memory = 1024
 		vb.cpus = 1
