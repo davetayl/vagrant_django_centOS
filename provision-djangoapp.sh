@@ -5,7 +5,7 @@ echo ""; echo "---- Provisioning Environment ----"
 
 # Install tools
 echo "- Installing Tools -"
-dnf -yqe 3 install net-tools bind-utils python3 httpd
+dnf -yqe 3 install net-tools bind-utils tree python3 python3-mod_wsgi httpd
 
 # Configure firewall
 echo "- Update Firewall -"
@@ -18,44 +18,58 @@ firewall-cmd --reload
 echo "---- Setting up Django ----"
 useradd django
 # Create django folders
-mkdir /opt/django
-mkdir /opt/django/media
-mkdir /opt/django/static
+mkdir /opt/django_site
 
 # setup project
-cd /opt/django
+cd /opt/django_site
 pip3 -q install virtualenv
 python3 -m virtualenv venv
 source ./venv/bin/activate
 pip3 -q install django
-chown -R apache:apache /opt/django
+django-admin startproject django_site
+sed 's/ALLOWED_HOSTS = \[\]/ALLOWED_HOSTS = \[\"127.0.0.1\"\]/g' /opt/django_site/django_site/django_site/settings.py
+mkdir /opt/django_site/django_site/media
+mkdir /opt/django_site/django_site/static
+chown -R apache:apache /opt/django_site
 
 # Setup apache server
 echo "---- Setting up Apache Server ----"
-cat > /etc/httpd/conf.d/django.cont <<EOF
+cat > /etc/httpd/conf.d/django_site.conf <<EOF
 <VirtualHost *:80>
-	WSGIScriptAlias / /opt/django/django/wsgi.py
-	WSGIPythonPath /opt/django/
-	Alias /robots.txt /opt/django/static/robots.txt
-	Alias /favicon.ico /opt/django/static/favicon.ico
+        ServerName django_site.lab
+        DocumentRoot /opt/django_site
 
-	Alias /media/ /opt/django/media/
-	Alias /static/ /opt/django/static/
+        Alias /static /opt/django_site/django_site/static/
+        <Directory "/opt/django_site/django_site/static/">
+                Options FollowSymLinks
+                Order allow,deny
+                Allow from all
+                Require all granted
+        </Directory>
 
-	<Directory /opt/django/>
-	<Files wsgi.py>
-		Order deny,allow
-		Allow from all
-	</Files>
-	</Directory>
-    ErrorLog /var/log/httpd/django-error.log
-    CustomLog /var/log/httpd/django-access.log combined
+        Alias /media /opt/django_site/django_site/media/
+        <Directory "/opt/django_site/django_site/media/">
+                Options FollowSymLinks
+                Order allow,deny
+                Allow from all
+                Require all granted
+        </Directory>
+
+		WSGIScriptAlias / /opt/django_site/django_site/django_site/wsgi.py
+		WSGIPythonPath /opt/django_site/django_site/
+		ErrorLog /var/log/httpd/django_site-error.log
+		CustomLog /var/log/httpd/django_site-access.log combined
+		
+        <Directory /opt/django_site/django_site>
+                <Files wsgi.py>
+                        Require all granted
+                </Files>
+        </Directory>
 </VirtualHost>
-
 EOF
 
 systemctl enable --now httpd.service
-systemctl reload httpd.service
+
 
 echo "---- Environment setup complete ----"; echo ""
 echo "------------------------------------------"
