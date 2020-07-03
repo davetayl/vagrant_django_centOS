@@ -27,16 +27,31 @@ python3 -m virtualenv venv
 source ./venv/bin/activate
 pip3 -q install django
 django-admin startproject django_site
-sed 's/ALLOWED_HOSTS = \[\]/ALLOWED_HOSTS = \[\"127.0.0.1\"\]/g' /opt/django_site/django_site/django_site/settings.py
+sed -i 's/ALLOWED_HOSTS = \[\]/ALLOWED_HOSTS = \[\"127.0.0.1\"\]/g' /opt/django_site/django_site/django_site/settings.py
+
+cat >> /opt/django_site/django_site/django_site/settings.py <<EOF
+STATIC_ROOT = "/opt/django_site/django_site/static/"
+EOF
+
 mkdir /opt/django_site/django_site/media
 mkdir /opt/django_site/django_site/static
 chown -R apache:apache /opt/django_site
 
+python /opt/django_site/django_site/manage.py makemigrations
+python /opt/django_site/django_site/manage.py migrate
+python /opt/django_site/django_site/manage.py collectstatic --noinput
+
+# Insert admin user
+echo "from django.contrib.auth.models import User; User.objects.filter(username='admin').delete(); User.objects.create_superuser('admin', 'admin@example.com', 'admin')" | python /opt/django_site/django_site/manage.py shell
+
 # Setup apache server
 echo "---- Setting up Apache Server ----"
 cat > /etc/httpd/conf.d/django_site.conf <<EOF
+WSGIScriptAlias / /path/to/mysite.com/mysite/wsgi.py
+WSGIPythonHome /opt/django_site/venv
+WSGIPythonPath /opt/django_site/django_site
+
 <VirtualHost *:80>
-        ServerName django_site.lab
         DocumentRoot /opt/django_site
 
         Alias /static /opt/django_site/django_site/static/
@@ -55,11 +70,10 @@ cat > /etc/httpd/conf.d/django_site.conf <<EOF
                 Require all granted
         </Directory>
 
-		WSGIScriptAlias / /opt/django_site/django_site/django_site/wsgi.py
-		WSGIPythonPath /opt/django_site/django_site/
-		ErrorLog /var/log/httpd/django_site-error.log
-		CustomLog /var/log/httpd/django_site-access.log combined
-		
+                WSGIScriptAlias / /opt/django_site/django_site/django_site/wsgi.py
+                ErrorLog /var/log/httpd/django_site-error.log
+                CustomLog /var/log/httpd/django_site-access.log combined
+
         <Directory /opt/django_site/django_site>
                 <Files wsgi.py>
                         Require all granted
