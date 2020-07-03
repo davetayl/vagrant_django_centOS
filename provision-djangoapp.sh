@@ -35,7 +35,6 @@ EOF
 
 mkdir /opt/django_site/django_site/media
 mkdir /opt/django_site/django_site/static
-chown -R apache:apache /opt/django_site
 
 python /opt/django_site/django_site/manage.py makemigrations
 python /opt/django_site/django_site/manage.py migrate
@@ -43,6 +42,9 @@ python /opt/django_site/django_site/manage.py collectstatic --noinput
 
 # Insert admin user
 echo "from django.contrib.auth.models import User; User.objects.filter(username='admin').delete(); User.objects.create_superuser('admin', 'admin@example.com', 'admin')" | python /opt/django_site/django_site/manage.py shell
+
+# Make sure everything is owned by apache
+chown -R apache:apache /opt/django_site
 
 # Setup apache server
 echo "---- Setting up Apache Server ----"
